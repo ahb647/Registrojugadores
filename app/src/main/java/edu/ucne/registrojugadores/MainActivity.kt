@@ -4,44 +4,92 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import dagger.hilt.android.AndroidEntryPoint
 import edu.ucne.registrojugadores.ui.theme.RegistrojugadoresTheme
-
+import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadorScreen
+import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresEvent
+import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresState
+import edu.ucne.registrojugadores.ui.theme.screen.Jugadores_List.JugadoresListScreen
+import edu.ucne.registrojugadores.ui.theme.screen.Jugadores_List.JugadoresViewModel
+import edu.ucne.registrojugadores.ui.theme.util.Route
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
+            val navController = rememberNavController()
+            val snackbarHostState = remember { SnackbarHostState() }
+
             RegistrojugadoresTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                Scaffold(
+                    topBar = { TopAppBar(title = { Text("Registro de Jugadores") }) },
+                    snackbarHost = { SnackbarHost(snackbarHostState) }
+                ) { paddingValues ->
+
+                    NavHost(
+                        navController = navController,
+                        startDestination = Route.JUGADOR_LIST,
+                        modifier = Modifier.padding(paddingValues)
+                    ) {
+
+                        // Lista de jugadores
+                        composable(Route.JUGADOR_LIST) {
+                            val viewModel: JugadoresViewModel = hiltViewModel()
+                            val backEntry by navController.currentBackStackEntryAsState()
+                            val savedStateHandle = backEntry?.savedStateHandle
+
+                            val msgFlow = remember(savedStateHandle) {
+                                savedStateHandle?.getStateFlow("snackbar_msg", "")
+                            }
+                            val msgFromForm by msgFlow?.collectAsState() ?: remember { mutableStateOf("") }
+
+                            LaunchedEffect(msgFromForm) {
+                                if (msgFromForm.isNotEmpty()) {
+                                    snackbarHostState.showSnackbar(msgFromForm)
+                                    savedStateHandle?.set("snackbar_msg", "")
+                                }
+                            }
+
+                            JugadoresListScreen(
+                                viewModel = viewModel,
+                                onNavigate = { route -> navController.navigate(route) }
+                            )
+                        }
+
+                        // Formulario de jugador
+                        composable(Route.JUGADOR_FORM) {
+                            val viewModel: edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresViewModel = hiltViewModel()
+                            val state by viewModel.state.collectAsState()
+
+                            JugadorScreen(
+                                state = state,
+                                onEvent = { event ->
+                                    viewModel.onEvent(event)
+                                    if (event is JugadoresEvent.Save) {
+                                        navController.previousBackStackEntry
+                                            ?.savedStateHandle
+                                            ?.set("snackbar_msg", "Jugador guardado")
+                                        navController.popBackStack()
+                                    }
+                                },
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    RegistrojugadoresTheme {
-        Greeting("Android")
     }
 }
