@@ -15,12 +15,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
+import edu.ucne.registrojugadores.ui.theme.util.Route
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JugadoresListScreen(
     onNavigate: (String) -> Unit = {},
-    viewModel: edu.ucne.registrojugadores.ui.theme.screen.Jugadores_List.JugadoresViewModel
+    viewModel: JugadoresViewModel
 ) {
     val jugadores by viewModel.jugadores.collectAsState(emptyList())
 
@@ -29,113 +30,125 @@ fun JugadoresListScreen(
     var partidas by remember { mutableStateOf("0") }
 
     Scaffold { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
         ) {
-            Text(
-                text = "Jugadores Registrados",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            // Contenido principal
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Jugadores Registrados",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it },
+                    label = { Text("Nombre") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = partidas,
+                    onValueChange = { partidas = it },
+                    label = { Text("Partidas") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        if (nombre.isBlank()) {
+                            Log.e("JugadoresListScreen", "El nombre no puede estar vacío")
+                            return@Button
+                        }
+
+                        val partidasInt = partidas.toIntOrNull() ?: 0
 
 
-            OutlinedTextField(
-                value = nombre,
-                onValueChange = { nombre = it },
-                label = { Text("Nombre") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = partidas,
-                onValueChange = { partidas = it },
-                label = { Text("Partidas") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+                        val existe = jugadores.any { it.nombres.equals(nombre, ignoreCase = true) && it.jugadorId != jugadorId }
+                        if (existe) {
+                            Log.e("JugadoresListScreen", "Ya existe un jugador con el nombre: $nombre")
+                            return@Button
+                        }
+
+                        if (jugadorId == null) {
+                            viewModel.insertarJugador(
+                                Jugadores(
+                                    nombres = nombre,
+                                    partidas = partidasInt
+                                )
+                            )
+                            Log.d("JugadoresListScreen", "Jugador insertado: $nombre con $partidasInt partidas")
+                        } else {
+                            viewModel.actualizarJugador(
+                                Jugadores(
+                                    jugadorId = jugadorId!!,
+                                    nombres = nombre,
+                                    partidas = partidasInt
+                                )
+                            )
+                            Log.d("JugadoresListScreen", "Jugador actualizado: $nombre con $partidasInt partidas")
+                        }
+
+                        jugadorId = null
+                        nombre = ""
+                        partidas = "0"
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Text(text = if (jugadorId == null) "Guardar" else "Actualizar")
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                if (jugadores.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No hay jugadores registrados")
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(jugadores) { jugador ->
+                            JugadorItem(
+                                jugador = jugador,
+                                onDelete = { viewModel.eliminarJugador(jugador) },
+                                onSelect = {
+                                    jugadorId = jugador.jugadorId
+                                    nombre = jugador.nombres
+                                    partidas = jugador.partidas.toString()
+                                    Log.d("JugadoresListScreen", "Jugador seleccionado para editar: ${jugador.nombres}")
+                                }
+                            )
+                        }
+                    }
+                }
+            }
 
 
             Button(
-                onClick = {
-                    if (nombre.isBlank()) {
-                        Log.e("JugadoresListScreen", "El nombre no puede estar vacío")
-                        return@Button
-                    }
-
-                    val partidasInt = partidas.toIntOrNull() ?: 0
-
-                    // Verificar duplicados
-                    val existe = jugadores.any { it.nombres.equals(nombre, ignoreCase = true) && it.jugadorId != jugadorId }
-                    if (existe) {
-                        Log.e("JugadoresListScreen", "Ya existe un jugador con el nombre: $nombre")
-                        return@Button
-                    }
-
-                    if (jugadorId == null) {
-                        // Nuevo jugador
-                        viewModel.insertarJugador(
-                            Jugadores(
-                                nombres = nombre,
-                                partidas = partidasInt
-                            )
-                        )
-                        Log.d("JugadoresListScreen", "Jugador insertado: $nombre con $partidasInt partidas")
-                    } else {
-
-                        viewModel.actualizarJugador(
-                            Jugadores(
-                                jugadorId = jugadorId!!,
-                                nombres = nombre,
-                                partidas = partidasInt
-                            )
-                        )
-                        Log.d("JugadoresListScreen", "Jugador actualizado: $nombre con $partidasInt partidas")
-                    }
-
-
-                    jugadorId = null
-                    nombre = ""
-                    partidas = "0"
-                },
+                onClick = { onNavigate(Route.PARTIDA_LIST) },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = MaterialTheme.shapes.large
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+                    .size(64.dp),
+                shape = MaterialTheme.shapes.small
             ) {
-                Text(text = if (jugadorId == null) "Guardar" else "Actualizar")
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            if (jugadores.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No hay jugadores registrados")
-                }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(jugadores) { jugador ->
-                        JugadorItem(
-                            jugador = jugador,
-                            onDelete = { viewModel.eliminarJugador(jugador) },
-                            onSelect = {
-                                // Llenar formulario para editar
-                                jugadorId = jugador.jugadorId
-                                nombre = jugador.nombres
-                                partidas = jugador.partidas.toString()
-                                Log.d("JugadoresListScreen", "Jugador seleccionado para editar: ${jugador.nombres}")
-                            }
-                        )
-                    }
-                }
+                Text("▶")
             }
         }
     }
