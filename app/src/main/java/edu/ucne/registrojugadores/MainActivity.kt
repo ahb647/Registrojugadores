@@ -17,10 +17,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import edu.ucne.registrojugadores.ui.theme.RegistrojugadoresTheme
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadorScreen
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresEvent
-import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresState
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores_List.JugadoresListScreen
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores_List.JugadoresViewModel
+import edu.ucne.registrojugadores.ui.theme.screen.Partidas_List.PartidasListScreen
+import edu.ucne.registrojugadores.ui.theme.screen.Partidas_List.PartidasViewModel
 import edu.ucne.registrojugadores.ui.theme.util.Route
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -44,7 +46,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(paddingValues)
                     ) {
 
-                        // Lista de jugadores
+
                         composable(Route.JUGADOR_LIST) {
                             val viewModel: JugadoresViewModel = hiltViewModel()
                             val backEntry by navController.currentBackStackEntryAsState()
@@ -68,7 +70,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // Formulario de jugador
+
                         composable(Route.JUGADOR_FORM) {
                             val viewModel: edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresViewModel = hiltViewModel()
                             val state by viewModel.state.collectAsState()
@@ -86,6 +88,20 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onNavigateBack = { navController.popBackStack() }
                             )
+                        }
+
+
+                        composable(Route.PARTIDA_LIST) {
+                            val viewModel: PartidasViewModel = hiltViewModel()
+                            PartidasListScreen(
+                                viewModel = viewModel,
+                                onNavigate = { route -> navController.navigate(route) }
+                            )
+                        }
+
+
+                        composable(Route.PARTIDA_FORM) {
+
                         }
                     }
                 }
