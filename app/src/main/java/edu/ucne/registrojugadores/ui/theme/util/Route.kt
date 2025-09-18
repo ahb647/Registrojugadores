@@ -8,4 +8,7 @@ object Route {
 
     const val PARTIDA_FORM = "partida_form"
 
+
+    const val GAME_SCREEN = "game_screen"
+
 }
