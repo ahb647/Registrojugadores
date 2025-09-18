@@ -22,4 +22,9 @@ interface JugadorDao {
 
     @Update
     suspend fun updateJugador(jugador: JugadorEntity)
+
+    // 👇 Nuevo método para sumar +1 a partidas
+    @Query("UPDATE Jugadores SET partidas = partidas + 1 WHERE jugadorId = :jugadorId")
+    suspend fun incrementarPartidas(jugadorId: Int)
+
 }
