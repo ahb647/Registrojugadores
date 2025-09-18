@@ -9,12 +9,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import edu.ucne.registrojugadores.ui.theme.RegistrojugadoresTheme
+import edu.ucne.registrojugadores.ui.theme.screen.Juego.GameScreen
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadorScreen
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresEvent
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores_List.JugadoresListScreen
@@ -46,7 +49,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(paddingValues)
                     ) {
 
-
+                        // ---------- Lista de Jugadores ----------
                         composable(Route.JUGADOR_LIST) {
                             val viewModel: JugadoresViewModel = hiltViewModel()
                             val backEntry by navController.currentBackStackEntryAsState()
@@ -70,7 +73,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-
+                        // ---------- Formulario de Jugadores ----------
                         composable(Route.JUGADOR_FORM) {
                             val viewModel: edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresViewModel = hiltViewModel()
                             val state by viewModel.state.collectAsState()
@@ -90,7 +93,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-
+                        // ---------- Lista de Partidas ----------
                         composable(Route.PARTIDA_LIST) {
                             val viewModel: PartidasViewModel = hiltViewModel()
                             PartidasListScreen(
@@ -99,9 +102,27 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-
+                        // ---------- Formulario de Partidas ----------
                         composable(Route.PARTIDA_FORM) {
+                            // Por implementar
+                        }
 
+                        // ---------- Pantalla de Juego ----------
+                        composable(
+                            route = "${Route.GAME_SCREEN}?jugadorXId={jugadorXId}&jugadorOId={jugadorOId}",
+                            arguments = listOf(
+                                navArgument("jugadorXId") { type = NavType.IntType; defaultValue = 0 },
+                                navArgument("jugadorOId") { type = NavType.IntType; defaultValue = 0 }
+                            )
+                        ) { backStackEntry ->
+                            val jugadorXId = backStackEntry.arguments?.getInt("jugadorXId")
+                            val jugadorOId = backStackEntry.arguments?.getInt("jugadorOId")
+
+                            GameScreen(
+                                jugadorXId = jugadorXId,
+                                jugadorOId = jugadorOId,
+                                onExitGame = { navController.popBackStack() }
+                            )
                         }
                     }
                 }

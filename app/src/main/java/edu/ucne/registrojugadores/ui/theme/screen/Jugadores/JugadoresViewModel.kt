@@ -1,6 +1,8 @@
 package edu.ucne.registrojugadores.ui.theme.screen.Jugadores
 
-
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,10 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
 import edu.ucne.registrojugadores.Domain.Model.Repository.JugadoresRepository
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,9 +20,15 @@ class JugadoresViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-
     private val _state = MutableStateFlow(JugadoresState())
     val state: StateFlow<JugadoresState> = _state.asStateFlow()
+
+    // Propiedad para exponer la lista de jugadores como StateFlow
+    val jugadores: StateFlow<List<Jugadores>> = repository.getAllJugadores().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     // Canal de eventos para mensajes simples (Snackbar)
     private val _event = Channel<String>()
@@ -34,7 +39,6 @@ class JugadoresViewModel @Inject constructor(
             _event.send(message)
         }
     }
-
 
     fun onEvent(event: JugadoresEvent) {
         when (event) {
@@ -62,14 +66,13 @@ class JugadoresViewModel @Inject constructor(
 
     private fun insertarJugador(jugador: Jugadores) {
         viewModelScope.launch {
-            val existe = repository.getAllJugadores()
-                .collect { lista ->
-                    if (lista.any { it.nombres.equals(jugador.nombres, ignoreCase = true) }) {
-                        sendEvent("No se puede agregar un jugador con el mismo nombre")
-                    } else {
-                        repository.insertJugador(jugador)
-                    }
+            repository.getAllJugadores().collect { lista ->
+                if (lista.any { it.nombres.equals(jugador.nombres, ignoreCase = true) }) {
+                    sendEvent("No se puede agregar un jugador con el mismo nombre")
+                } else {
+                    repository.insertJugador(jugador)
                 }
+            }
         }
     }
 

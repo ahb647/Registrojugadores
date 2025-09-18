@@ -44,7 +44,7 @@ class PartidasViewModel @Inject constructor(
                 _state.value = _state.value.copy(jugador2Id = event.value)
             }
             is PartidasEvent.GanadorChanged -> {
-                val finalizado = event.value != 0
+                val finalizado = true // Siempre finalizada, empate incluido
                 _state.value = _state.value.copy(
                     ganadorId = event.value,
                     esFinalizada = finalizado
@@ -56,8 +56,8 @@ class PartidasViewModel @Inject constructor(
                 _state.value = _state.value.copy(
                     partidaId = event.partida.partidaId,
                     fecha = event.partida.fecha,
-                    jugador1Id = event.partida.jugador1Id,
-                    jugador2Id = event.partida.jugador2Id,
+                    jugador1Id = event.partida.jugador1Id ?: 1, // valor por defecto si es null
+                    jugador2Id = event.partida.jugador2Id ?: 2, // valor por defecto si es null
                     ganadorId = event.partida.ganadorId,
                     esFinalizada = event.partida.esFinalizada
                 )
@@ -67,8 +67,8 @@ class PartidasViewModel @Inject constructor(
 
     private fun guardarPartida(partida: Partida) {
         viewModelScope.launch {
-            val finalizado = partida.ganadorId != 0
-            val partidaActualizada = partida.copy(esFinalizada = finalizado)
+            // Marcar siempre como finalizada, empate incluido
+            val partidaActualizada = partida.copy(esFinalizada = true)
             repository.insertPartida(partidaActualizada)
             sendEvent("Partida guardada correctamente")
         }
@@ -79,5 +79,17 @@ class PartidasViewModel @Inject constructor(
             repository.deletePartida(partida)
             sendEvent("Partida eliminada")
         }
+    }
+
+    // Función auxiliar para insertar desde UI (opcional)
+    fun insertarPartida(partida: Partida) {
+        viewModelScope.launch {
+            guardarPartida(partida)
+        }
+    }
+
+    fun eliminarPartidaById(partidaId: Int) {
+        val partida = _state.value.partidas.firstOrNull { it.partidaId == partidaId }
+        partida?.let { eliminarPartida(it) }
     }
 }

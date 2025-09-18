@@ -34,4 +34,10 @@ class JugadorRepositoryImpl @Inject constructor(
     override suspend fun updateJugador(jugador: Jugadores) {
         dao.updateJugador(jugador.toEntity())
     }
+
+    override suspend fun incrementarPartidas(jugadorId: Int) {
+        val jugadorExistente = dao.getJugadorById(jugadorId) ?: return
+        val actualizado = jugadorExistente.copy(partidas = jugadorExistente.partidas + 1)
+        dao.updateJugador(actualizado)
+    }
 }

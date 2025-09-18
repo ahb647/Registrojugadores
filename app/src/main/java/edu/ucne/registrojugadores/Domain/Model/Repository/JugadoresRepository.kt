@@ -14,4 +14,6 @@ interface JugadoresRepository {
     suspend fun deleteJugador(jugador: Jugadores)
 
     suspend fun updateJugador(jugador: Jugadores)
+
+    suspend fun incrementarPartidas(jugadorId: Int)
 }
