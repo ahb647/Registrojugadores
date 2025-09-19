@@ -22,6 +22,8 @@ import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadorScreen
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresEvent
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores_List.JugadoresListScreen
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores_List.JugadoresViewModel
+import edu.ucne.registrojugadores.ui.theme.screen.Logros_List.LogrosListScreen
+import edu.ucne.registrojugadores.ui.theme.screen.Logros_List.LogrosListViewModel
 import edu.ucne.registrojugadores.ui.theme.screen.Partidas_List.PartidasListScreen
 import edu.ucne.registrojugadores.ui.theme.screen.Partidas_List.PartidasViewModel
 import edu.ucne.registrojugadores.ui.theme.util.Route
@@ -105,6 +107,15 @@ class MainActivity : ComponentActivity() {
                         // ---------- Formulario de Partidas ----------
                         composable(Route.PARTIDA_FORM) {
                             // Por implementar
+                        }
+
+                        // ---------- Lista de Logros ----------
+                        composable(Route.LOGROS_LIST) {
+                            val viewModel: LogrosListViewModel = hiltViewModel()
+                            LogrosListScreen(
+                                viewModel = viewModel,
+                                onNavigate = { route -> navController.navigate(route) }
+                            )
                         }
 
                         // ---------- Pantalla de Juego ----------
