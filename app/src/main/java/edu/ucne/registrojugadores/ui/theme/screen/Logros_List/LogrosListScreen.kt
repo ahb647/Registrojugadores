@@ -1,4 +1,4 @@
-package edu.ucne.registrojugadores.ui.theme.screen.Jugadores_List
+package edu.ucne.registrojugadores.ui.theme.screen.Logros_List
 
 import android.util.Log
 import androidx.compose.foundation.layout.*
@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,20 +14,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
-import edu.ucne.registrojugadores.ui.theme.util.Route
+import edu.ucne.registrojugadores.Domain.Model.Model.Logros
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun JugadoresListScreen(
+fun LogrosListScreen(
     onNavigate: (String) -> Unit = {},
-    viewModel: JugadoresViewModel
+    viewModel: LogrosListViewModel
 ) {
-    val jugadores by viewModel.jugadores.collectAsState(emptyList())
-
-    var jugadorId by remember { mutableStateOf<Int?>(null) }
+    val logros by viewModel.logros.collectAsState()
+    var logroId by remember { mutableStateOf<Int?>(null) }
     var nombre by remember { mutableStateOf("") }
-    var partidas by remember { mutableStateOf("0") }
+    var descripcion by remember { mutableStateOf("") }
 
     Scaffold { padding ->
         Box(
@@ -35,14 +33,13 @@ fun JugadoresListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Contenido principal
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "Jugadores Registrados",
+                    text = "Logros Registrados",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -51,14 +48,14 @@ fun JugadoresListScreen(
                 OutlinedTextField(
                     value = nombre,
                     onValueChange = { nombre = it },
-                    label = { Text("Nombre") },
+                    label = { Text("Nombre del Logro") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
-                    value = partidas,
-                    onValueChange = { partidas = it },
-                    label = { Text("Partidas") },
+                    value = descripcion,
+                    onValueChange = { descripcion = it },
+                    label = { Text("Descripción") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -66,110 +63,82 @@ fun JugadoresListScreen(
                 Button(
                     onClick = {
                         if (nombre.isBlank()) {
-                            Log.e("JugadoresListScreen", "El nombre no puede estar vacío")
+                            Log.e("LogrosListScreen", "El nombre del logro no puede estar vacío")
                             return@Button
                         }
 
-                        val partidasInt = partidas.toIntOrNull() ?: 0
-
-                        val existe = jugadores.any { it.nombres.equals(nombre, ignoreCase = true) && it.jugadorId != jugadorId }
+                        val existe = logros.any { it.logroNombre.equals(nombre, ignoreCase = true) && it.logroId != logroId }
                         if (existe) {
-                            Log.e("JugadoresListScreen", "Ya existe un jugador con el nombre: $nombre")
+                            Log.e("LogrosListScreen", "Ya existe un logro con el nombre: $nombre")
                             return@Button
                         }
 
-                        if (jugadorId == null) {
-                            viewModel.insertarJugador(
-                                Jugadores(
-                                    nombres = nombre,
-                                    partidas = partidasInt
+                        if (logroId == null) {
+                            viewModel.insertarLogro(
+                                Logros(
+                                    logroNombre = nombre,
+                                    descripcion = descripcion
                                 )
                             )
-                            Log.d("JugadoresListScreen", "Jugador insertado: $nombre con $partidasInt partidas")
+                            Log.d("LogrosListScreen", "Logro insertado: $nombre")
                         } else {
-                            viewModel.actualizarJugador(
-                                Jugadores(
-                                    jugadorId = jugadorId!!,
-                                    nombres = nombre,
-                                    partidas = partidasInt
+                            viewModel.actualizarLogro(
+                                Logros(
+                                    logroId = logroId,
+                                    logroNombre = nombre,
+                                    descripcion = descripcion
                                 )
                             )
-                            Log.d("JugadoresListScreen", "Jugador actualizado: $nombre con $partidasInt partidas")
+                            Log.d("LogrosListScreen", "Logro actualizado: $nombre")
                         }
 
-                        jugadorId = null
+                        logroId = null
                         nombre = ""
-                        partidas = "0"
+                        descripcion = ""
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
                     shape = MaterialTheme.shapes.large
                 ) {
-                    Text(text = if (jugadorId == null) "Guardar" else "Actualizar")
+                    Text(text = if (logroId == null) "Guardar" else "Actualizar")
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                if (jugadores.isEmpty()) {
+                if (logros.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("No hay jugadores registrados")
+                        Text("No hay logros registrados")
                     }
                 } else {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(jugadores) { jugador ->
-                            JugadorItem(
-                                jugador = jugador,
-                                onDelete = { viewModel.eliminarJugador(jugador) },
+                        items(logros) { logro ->
+                            LogroItem(
+                                logro = logro,
+                                onDelete = { viewModel.eliminarLogro(logro) },
                                 onSelect = {
-                                    jugadorId = jugador.jugadorId
-                                    nombre = jugador.nombres
-                                    partidas = jugador.partidas.toString()
-                                    Log.d("JugadoresListScreen", "Jugador seleccionado para editar: ${jugador.nombres}")
+                                    logroId = logro.logroId
+                                    nombre = logro.logroNombre
+                                    descripcion = logro.descripcion
+                                    Log.d("LogrosListScreen", "Logro seleccionado para editar: ${logro.logroNombre}")
                                 }
                             )
                         }
                     }
                 }
             }
-
-            // Botón de Partidas en la esquina inferior derecha
-            Button(
-                onClick = { onNavigate(Route.PARTIDA_LIST) },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-                    .size(64.dp),
-                shape = MaterialTheme.shapes.small
-            ) {
-                Text("▶")
-            }
-
-            // Botón de Logros centrado en la parte inferior
-            Button(
-                onClick = { onNavigate(Route.LOGROS_LIST) },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp)
-                    .height(48.dp)
-                    .width(120.dp),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Text("Logros")
-            }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun JugadorItem(
-    jugador: Jugadores,
+fun LogroItem(
+    logro: Logros,
     onDelete: () -> Unit,
     onSelect: () -> Unit
 ) {
@@ -186,17 +155,17 @@ fun JugadorItem(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Jugador",
+                    imageVector = Icons.Default.EmojiEvents,
+                    contentDescription = "Logro",
                     modifier = Modifier.padding(end = 16.dp)
                 )
                 Column {
                     Text(
-                        text = jugador.nombres,
+                        text = logro.logroNombre,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Partidas: ${jugador.partidas}",
+                        text = logro.descripcion,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

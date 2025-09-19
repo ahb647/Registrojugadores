@@ -11,4 +11,7 @@ object Route {
 
     const val GAME_SCREEN = "game_screen"
 
+    const val LOGROS_LIST = "logros_list"
+    const val LOGROS_FORM = "logros_form"
+
 }

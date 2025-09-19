@@ -10,10 +10,13 @@ import dagger.hilt.components.SingletonComponent
 import edu.ucne.registrojugadores.Data.Local.AppDatabase
 import edu.ucne.registrojugadores.Data.Local.Dao.JugadorDao
 import edu.ucne.registrojugadores.Data.Local.Dao.PartidaDao
+import edu.ucne.registrojugadores.Data.Local.Dao.LogrosDao
 import edu.ucne.registrojugadores.Data.Repository.JugadorRepositoryImpl
 import edu.ucne.registrojugadores.Data.Repository.PartidasRepositoryImpl
+import edu.ucne.registrojugadores.Data.Repository.LogrosRepositoryImpl
 import edu.ucne.registrojugadores.Domain.Model.Repository.JugadoresRepository
 import edu.ucne.registrojugadores.Domain.Model.Repository.PartidasRepository
+import edu.ucne.registrojugadores.Domain.Model.Repository.LogrosRepository
 import javax.inject.Singleton
 
 @Module
@@ -27,7 +30,9 @@ object AppModule {
             context,
             AppDatabase::class.java,
             "app_database"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     // ---------------------------
@@ -58,5 +63,20 @@ object AppModule {
     @Singleton
     fun providePartidasRepository(dao: PartidaDao): PartidasRepository {
         return PartidasRepositoryImpl(dao)
+    }
+
+    // ---------------------------
+    // Logros
+    // ---------------------------
+    @Provides
+    @Singleton
+    fun provideLogrosDao(database: AppDatabase): LogrosDao {
+        return database.logrosDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLogrosRepository(dao: LogrosDao): LogrosRepository {
+        return LogrosRepositoryImpl(dao)
     }
 }
