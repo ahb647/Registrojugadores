@@ -2,51 +2,52 @@ package edu.ucne.registrojugadores.Data.mapper
 
 import edu.ucne.registrojugadores.Data.Local.Entity.JugadorEntity
 import edu.ucne.registrojugadores.Data.Local.Entity.PartidaEntity
+import edu.ucne.registrojugadores.Data.Local.Entity.LogrosEntity
 import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
 import edu.ucne.registrojugadores.Domain.Model.Model.Partida
+import edu.ucne.registrojugadores.Domain.Model.Model.Logros
 
 // -------------------- JUGADORES --------------------
+fun JugadorEntity.asExternalModel(): Jugadores = Jugadores(
+    jugadorId = jugadorId,
+    nombres = nombres,
+    partidas = partidas
+)
 
-// Entity -> Dominio
-fun JugadorEntity.asExternalModel(): Jugadores {
-    return Jugadores(
-        jugadorId = jugadorId, // int no nullable en Entity, int? en dominio
-        nombres = nombres,
-        partidas = partidas
-    )
-}
-
-// Dominio -> Entity
-fun Jugadores.toEntity(): JugadorEntity {
-    return JugadorEntity(
-        jugadorId = jugadorId ?: 0, // si es null, Room asignará ID automáticamente
-        nombres = nombres,
-        partidas = partidas
-    )
-}
+fun Jugadores.toEntity(): JugadorEntity = JugadorEntity(
+    jugadorId = jugadorId ?: 0,
+    nombres = nombres,
+    partidas = partidas
+)
 
 // -------------------- PARTIDAS --------------------
+fun PartidaEntity.asExternalModel(): Partida = Partida(
+    partidaId = partidaId,
+    fecha = fecha,
+    jugador1Id = jugador1Id,
+    jugador2Id = jugador2Id,
+    ganadorId = ganadorId,
+    esFinalizada = esFinalizada
+)
 
-// Entity -> Dominio
-fun PartidaEntity.asExternalModel(): Partida {
-    return Partida(
-        partidaId = partidaId,
-        fecha = fecha,
-        jugador1Id = jugador1Id,
-        jugador2Id = jugador2Id,
-        ganadorId = ganadorId,
-        esFinalizada = esFinalizada
-    )
-}
+fun Partida.toEntity(): PartidaEntity = PartidaEntity(
+    partidaId = partidaId ?: 0,
+    fecha = fecha,
+    jugador1Id = jugador1Id ?: 0,
+    jugador2Id = jugador2Id ?: 0,
+    ganadorId = ganadorId,
+    esFinalizada = esFinalizada
+)
 
-// Dominio -> Entity
-fun Partida.toEntity(): PartidaEntity {
-    return PartidaEntity(
-        partidaId = partidaId ?: 0,          // si es null, Room lo reemplaza
-        fecha = fecha,
-        jugador1Id = jugador1Id ?: 0,        // forzamos Int
-        jugador2Id = jugador2Id ?: 0,        // forzamos Int
-        ganadorId = ganadorId,
-        esFinalizada = esFinalizada
-    )
-}
+// -------------------- LOGROS --------------------
+fun LogrosEntity.asExternalModel(): Logros = Logros(
+    logroId = logroId,
+    logroNombre = logroNombre,
+    descripcion = descripcion
+)
+
+fun Logros.toEntity(): LogrosEntity = LogrosEntity(
+    logroId = logroId ?: 0,
+    logroNombre = logroNombre,
+    descripcion = descripcion
+)
