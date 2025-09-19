@@ -16,8 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
 import edu.ucne.registrojugadores.ui.theme.util.Route
-import androidx.compose.ui.tooling.preview.Preview
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,7 +71,6 @@ fun JugadoresListScreen(
                         }
 
                         val partidasInt = partidas.toIntOrNull() ?: 0
-
 
                         val existe = jugadores.any { it.nombres.equals(nombre, ignoreCase = true) && it.jugadorId != jugadorId }
                         if (existe) {
@@ -141,7 +138,7 @@ fun JugadoresListScreen(
                 }
             }
 
-
+            // Botón de Partidas en la esquina inferior derecha
             Button(
                 onClick = { onNavigate(Route.PARTIDA_LIST) },
                 modifier = Modifier
@@ -151,6 +148,19 @@ fun JugadoresListScreen(
                 shape = MaterialTheme.shapes.small
             ) {
                 Text("▶")
+            }
+
+            // Botón de Logros centrado en la parte inferior
+            Button(
+                onClick = { onNavigate(Route.LOGROS_LIST) },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+                    .height(48.dp)
+                    .width(120.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text("Logros")
             }
         }
     }
