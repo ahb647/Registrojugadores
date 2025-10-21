@@ -6,7 +6,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
@@ -20,12 +24,12 @@ import edu.ucne.registrojugadores.ui.theme.RegistrojugadoresTheme
 import edu.ucne.registrojugadores.ui.theme.screen.Juego.GameScreen
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadorScreen
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresEvent
+import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresViewModel
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores_List.JugadoresListScreen
-import edu.ucne.registrojugadores.ui.theme.screen.Jugadores_List.JugadoresViewModel
+import edu.ucne.registrojugadores.ui.theme.screen.Partidas.PartidasViewModel
+import edu.ucne.registrojugadores.ui.theme.screen.Partidas_List.PartidasListScreen
 import edu.ucne.registrojugadores.ui.theme.screen.Logros_List.LogrosListScreen
 import edu.ucne.registrojugadores.ui.theme.screen.Logros_List.LogrosListViewModel
-import edu.ucne.registrojugadores.ui.theme.screen.Partidas_List.PartidasListScreen
-import edu.ucne.registrojugadores.ui.theme.screen.Partidas_List.PartidasViewModel
 import edu.ucne.registrojugadores.ui.theme.util.Route
 
 @AndroidEntryPoint
@@ -51,7 +55,6 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(paddingValues)
                     ) {
 
-                        // ---------- Lista de Jugadores ----------
                         composable(Route.JUGADOR_LIST) {
                             val viewModel: JugadoresViewModel = hiltViewModel()
                             val backEntry by navController.currentBackStackEntryAsState()
@@ -75,15 +78,14 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // ---------- Formulario de Jugadores ----------
                         composable(Route.JUGADOR_FORM) {
-                            val viewModel: edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresViewModel = hiltViewModel()
-                            val state by viewModel.state.collectAsState()
+                            val viewModel: JugadoresViewModel = hiltViewModel()
+                            val jugadores by viewModel.jugadores.collectAsState(initial = emptyList())
+                            val jugadorDto = jugadores.firstOrNull()
 
                             JugadorScreen(
-                                state = state,
+                                jugadorDto = jugadorDto,
                                 onEvent = { event ->
-                                    viewModel.onEvent(event)
                                     if (event is JugadoresEvent.Save) {
                                         navController.previousBackStackEntry
                                             ?.savedStateHandle
@@ -95,21 +97,16 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // ---------- Lista de Partidas ----------
                         composable(Route.PARTIDA_LIST) {
                             val viewModel: PartidasViewModel = hiltViewModel()
+                            val jugadoresViewModel: JugadoresViewModel = hiltViewModel()
                             PartidasListScreen(
                                 viewModel = viewModel,
+                                jugadoresViewModel = jugadoresViewModel,
                                 onNavigate = { route -> navController.navigate(route) }
                             )
                         }
 
-                        // ---------- Formulario de Partidas ----------
-                        composable(Route.PARTIDA_FORM) {
-                            // Por implementar
-                        }
-
-                        // ---------- Lista de Logros ----------
                         composable(Route.LOGROS_LIST) {
                             val viewModel: LogrosListViewModel = hiltViewModel()
                             LogrosListScreen(
@@ -118,21 +115,17 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // ---------- Pantalla de Juego ----------
                         composable(
-                            route = "${Route.GAME_SCREEN}?jugadorXId={jugadorXId}&jugadorOId={jugadorOId}",
+                            route = "${Route.GAME_SCREEN}?jugadorXId={jugadorXId}&jugadorOId={jugadorOId}&partidaId={partidaId}",
                             arguments = listOf(
                                 navArgument("jugadorXId") { type = NavType.IntType; defaultValue = 0 },
-                                navArgument("jugadorOId") { type = NavType.IntType; defaultValue = 0 }
+                                navArgument("jugadorOId") { type = NavType.IntType; defaultValue = 0 },
+                                navArgument("partidaId") { type = NavType.IntType; defaultValue = 0 }
                             )
-                        ) { backStackEntry ->
-                            val jugadorXId = backStackEntry.arguments?.getInt("jugadorXId")
-                            val jugadorOId = backStackEntry.arguments?.getInt("jugadorOId")
-
+                        ) {
                             GameScreen(
-                                jugadorXId = jugadorXId,
-                                jugadorOId = jugadorOId,
-                                onExitGame = { navController.popBackStack() }
+                                gameViewModel = hiltViewModel(),
+                                jugadoresViewModel = hiltViewModel()
                             )
                         }
                     }
