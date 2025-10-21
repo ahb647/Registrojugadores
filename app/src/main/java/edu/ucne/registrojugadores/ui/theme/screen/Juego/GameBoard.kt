@@ -1,6 +1,5 @@
 package edu.ucne.registrojugadores.ui.theme.screen.Juego
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
@@ -13,19 +12,24 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+enum class Player {
+    X,
+    O
+}
+
 @Composable
 fun GameBoard(
     board: Array<Player?>,
     onCellClicked: (Int) -> Unit,
     modifier: Modifier = Modifier,
     colorX: Color = Color.Red,
-    colorO: Color = Color.Blue
+    colorO: Color = Color.Blue,
+    numberColor: Color = Color.Black
 ) {
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-
         BoardBase(modifier = Modifier.fillMaxSize())
 
         Column(
@@ -49,8 +53,8 @@ fun GameBoard(
                             contentAlignment = Alignment.Center
                         ) {
                             when (board[index]) {
-                                Player.X -> Cross(color = colorX)
-                                Player.O -> Circle(color = colorO)
+                                Player.X -> Cross(color = numberColor)
+                                Player.O -> Circle(color = numberColor)
                                 null -> {}
                             }
                         }
@@ -63,10 +67,9 @@ fun GameBoard(
 
 @Composable
 fun Cross(color: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.fillMaxSize()) {
+    androidx.compose.foundation.Canvas(modifier = modifier.fillMaxSize()) {
         val padding = size.minDimension * 0.2f
         val stroke = size.minDimension * 0.08f
-
         drawLine(
             color = color,
             start = Offset(padding, padding),
@@ -86,7 +89,7 @@ fun Cross(color: Color, modifier: Modifier = Modifier) {
 
 @Composable
 fun Circle(color: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.fillMaxSize()) {
+    androidx.compose.foundation.Canvas(modifier = modifier.fillMaxSize()) {
         val padding = size.minDimension * 0.2f
         val stroke = size.minDimension * 0.08f
         drawCircle(
@@ -99,16 +102,15 @@ fun Circle(color: Color, modifier: Modifier = Modifier) {
 
 @Composable
 fun BoardBase(modifier: Modifier = Modifier, sizeDp: Dp = 300.dp) {
-    Canvas(
+    androidx.compose.foundation.Canvas(
         modifier = modifier
             .fillMaxSize()
             .padding(10.dp),
     ) {
         val thirdWidth = size.width / 3
         val thirdHeight = size.height / 3
-        val lineWidth = size.width * 0.02f // más proporcional al tamaño
+        val lineWidth = size.width * 0.02f
 
-        // Líneas verticales
         drawLine(
             color = Color.Gray,
             strokeWidth = lineWidth,
@@ -123,8 +125,6 @@ fun BoardBase(modifier: Modifier = Modifier, sizeDp: Dp = 300.dp) {
             start = Offset(x = 2 * thirdWidth, y = 0f),
             end = Offset(x = 2 * thirdWidth, y = size.height)
         )
-
-        // Líneas horizontales
         drawLine(
             color = Color.Gray,
             strokeWidth = lineWidth,
