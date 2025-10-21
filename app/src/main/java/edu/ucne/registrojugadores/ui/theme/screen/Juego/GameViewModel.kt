@@ -4,8 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
-import edu.ucne.registrojugadores.Domain.Model.Repository.JugadoresRepository
+import edu.ucne.registrojugadores.Data.Repository.GestionHuacalesApiRepository
+import edu.ucne.registrojugadores.Data.remote.dto.MovimientosRequestDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,74 +14,126 @@ import javax.inject.Inject
 
 @HiltViewModel
 class GameViewModel @Inject constructor(
-    private val repository: JugadoresRepository
+    private val repository: GestionHuacalesApiRepository
 ) : ViewModel() {
+
+    enum class Player { X, O }
+
+    sealed class GameAction {
+        data class BoardTapped(val cell: Int) : GameAction()
+        object PlayAgain : GameAction()
+    }
+
+    data class GameState(
+        val board: Array<Player?> = Array(9) { null },
+        val currentPlayer: Player = Player.X,
+        val hasWon: Boolean = false,
+        val isDraw: Boolean = false,
+        val lastPlayer: Player? = null,
+        val xScore: Int = 0,
+        val oScore: Int = 0,
+        val drawScore: Int = 0,
+        val isFinalizada: Boolean = false,
+        val checkpointBoard: Array<Player?> = Array(9) { null }
+    )
 
     private val _state = MutableStateFlow(GameState())
     val state: StateFlow<GameState> = _state.asStateFlow()
+    private var currentPartidaId: Int? = null
 
-    fun incrementarPartidas(jugadorId: Int?) {
-        if (jugadorId == null || jugadorId <= 0) return
+    fun iniciarPartida(partidaId: Int?) {
+        currentPartidaId = partidaId
+        partidaId?.let { cargarPartida(it) }
+    }
 
+    fun cargarPartida(partidaId: Int) {
         viewModelScope.launch {
-            try {
-                val jugador = repository.getJugadorById(jugadorId)
-                if (jugador != null) {
-                    repository.incrementarPartidas(jugadorId)
-                    Log.d("GameViewModel", "Partidas incrementadas para jugador ID: $jugadorId")
-                } else {
-                    Log.w("GameViewModel", "Jugador con ID $jugadorId no encontrado. No se incrementarán partidas.")
+            repository.getMovimientos(partidaId).onSuccess { lista ->
+                val newBoard = Array<Player?>(9) { null }
+                lista?.forEach { movimiento ->
+                    val index = movimiento.posicionFila * 3 + movimiento.posicionColumna
+                    newBoard[index] = if (movimiento.jugador == "X") Player.X else Player.O
                 }
-            } catch (e: Exception) {
-                Log.e("GameViewModel", "Error al incrementar partidas para jugador ID: $jugadorId", e)
+                _state.value = _state.value.copy(
+                    board = newBoard,
+                    checkpointBoard = newBoard.copyOf(),
+                    isFinalizada = false
+                )
+                currentPartidaId = partidaId
+            }.onFailure { e ->
+                Log.e("GameViewModel", "Error cargando movimientos: ${e.message}")
             }
         }
     }
 
+    fun guardarMovimientosActuales() {
+        val currentState = _state.value
+        val partidaId = currentPartidaId
+        if (partidaId == null) {
+            Log.e("GameViewModel", "No hay partida cargada para guardar")
+            return
+        }
+
+        viewModelScope.launch {
+            currentState.board.forEachIndexed { index, player ->
+                player?.let {
+                    val fila = index / 3
+                    val col = index % 3
+                    val request = MovimientosRequestDto(
+                        partidaId = partidaId,
+                        jugador = if (it == Player.X) "X" else "O",
+                        posicionFila = fila,
+                        posicionColumna = col
+                    )
+                    try {
+                        repository.postMovimiento(request)
+                    } catch (e: Exception) {
+                        Log.e("GameViewModel", "Error guardando movimiento: ${e.message}")
+                    }
+                }
+            }
+            _state.value = currentState.copy(checkpointBoard = currentState.board.copyOf())
+            Log.d("GameViewModel", "Movimientos guardados correctamente")
+        }
+    }
+
+    fun rerollTablero() {
+        val currentState = _state.value
+        _state.value = currentState.copy(
+            board = currentState.checkpointBoard.copyOf(),
+            hasWon = false,
+            isDraw = false,
+            lastPlayer = null
+        )
+    }
+
     fun onAction(action: GameAction) {
+        val currentState = _state.value
         when (action) {
             is GameAction.BoardTapped -> {
-                val currentState = _state.value
-                if (currentState.board[action.cell] == null && !currentState.hasWon && !currentState.isDraw) {
+                if (currentState.board[action.cell] == null &&
+                    !currentState.hasWon && !currentState.isDraw && !currentState.isFinalizada
+                ) {
                     val newBoard = currentState.board.copyOf()
                     newBoard[action.cell] = currentState.currentPlayer
-
                     val hasWon = checkWin(newBoard, currentState.currentPlayer)
                     val isDraw = !hasWon && newBoard.all { it != null }
-
-                    val newState = currentState.copy(
+                    _state.value = currentState.copy(
                         board = newBoard,
                         currentPlayer = if (currentState.currentPlayer == Player.X) Player.O else Player.X,
                         hasWon = hasWon,
                         isDraw = isDraw,
-                        winLine = if (hasWon) getWinLine(newBoard, currentState.currentPlayer) else null,
-                        lastPlayer = if (hasWon) currentState.currentPlayer else null // ✅ actualizar ganador
+                        lastPlayer = if (hasWon) currentState.currentPlayer else null,
+                        isFinalizada = hasWon || isDraw
                     )
-
-                    _state.value = newState
-
-                    // Actualizar puntuaciones
-                    if (hasWon) {
-                        _state.value = when (currentState.currentPlayer) {
-                            Player.X -> newState.copy(xScore = newState.xScore + 1)
-                            Player.O -> newState.copy(oScore = newState.oScore + 1)
-                            else -> newState
-                        }
-                        Log.i("GameViewModel", "¡Jugador ${currentState.currentPlayer} ha ganado!")
-                    } else if (isDraw) {
-                        _state.value = newState.copy(drawScore = newState.drawScore + 1)
-                        Log.i("GameViewModel", "¡Empate!")
-                    }
                 }
             }
             GameAction.PlayAgain -> {
-                val currentState = _state.value
                 _state.value = GameState(
                     xScore = currentState.xScore,
                     oScore = currentState.oScore,
                     drawScore = currentState.drawScore
                 )
-                Log.d("GameViewModel", "Juego reiniciado")
             }
         }
     }
@@ -94,74 +146,4 @@ class GameViewModel @Inject constructor(
         )
         return winPatterns.any { pattern -> pattern.all { board[it] == player } }
     }
-
-    private fun getWinLine(board: Array<Player?>, player: Player): WinLine? {
-        val winPatterns = mapOf(
-            listOf(0, 1, 2) to WinLine.Horizontal1,
-            listOf(3, 4, 5) to WinLine.Horizontal2,
-            listOf(6, 7, 8) to WinLine.Horizontal3,
-            listOf(0, 3, 6) to WinLine.Vertical1,
-            listOf(1, 4, 7) to WinLine.Vertical2,
-            listOf(2, 5, 8) to WinLine.Vertical3,
-            listOf(0, 4, 8) to WinLine.Diagonal1,
-            listOf(2, 4, 6) to WinLine.Diagonal2
-        )
-        return winPatterns.entries.firstOrNull { (pattern, _) -> pattern.all { board[it] == player } }?.value
-    }
-}
-
-data class GameState(
-    val board: Array<Player?> = arrayOfNulls(9),
-    val currentPlayer: Player = Player.X,
-    val xScore: Int = 0,
-    val oScore: Int = 0,
-    val drawScore: Int = 0,
-    val hasWon: Boolean = false,
-    val isDraw: Boolean = false,
-    val winLine: WinLine? = null,
-    val lastPlayer: Player? = null // ✅ ganador dentro del estado
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        other as GameState
-        if (!board.contentEquals(other.board)) return false
-        if (currentPlayer != other.currentPlayer) return false
-        if (xScore != other.xScore) return false
-        if (oScore != other.oScore) return false
-        if (drawScore != other.drawScore) return false
-        if (hasWon != other.hasWon) return false
-        if (isDraw != other.isDraw) return false
-        if (winLine != other.winLine) return false
-        if (lastPlayer != other.lastPlayer) return false
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = board.contentHashCode()
-        result = 31 * result + currentPlayer.hashCode()
-        result = 31 * result + xScore
-        result = 31 * result + oScore
-        result = 31 * result + drawScore
-        result = 31 * result + hasWon.hashCode()
-        result = 31 * result + isDraw.hashCode()
-        result = 31 * result + (winLine?.hashCode() ?: 0)
-        result = 31 * result + (lastPlayer?.hashCode() ?: 0)
-        return result
-    }
-}
-
-enum class Player {
-    X, O
-}
-
-sealed class GameAction {
-    data class BoardTapped(val cell: Int) : GameAction()
-    object PlayAgain : GameAction()
-}
-
-enum class WinLine {
-    Horizontal1, Horizontal2, Horizontal3,
-    Vertical1, Vertical2, Vertical3,
-    Diagonal1, Diagonal2
 }
