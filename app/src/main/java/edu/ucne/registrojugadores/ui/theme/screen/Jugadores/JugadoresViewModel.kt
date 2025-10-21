@@ -1,34 +1,29 @@
 package edu.ucne.registrojugadores.ui.theme.screen.Jugadores
 
-
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
-import edu.ucne.registrojugadores.Domain.Model.Repository.JugadoresRepository
+import edu.ucne.registrojugadores.Data.Repository.GestionHuacalesApiRepository
+import edu.ucne.registrojugadores.Data.remote.dto.JugadorRequestDto
+import edu.ucne.registrojugadores.Data.remote.dto.JugadorResponseDto
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class JugadoresViewModel @Inject constructor(
-    private val repository: JugadoresRepository,
+    private val repository: GestionHuacalesApiRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(JugadoresState())
-    val state: StateFlow<JugadoresState> = _state.asStateFlow()
+    private val _jugadores = MutableStateFlow<List<JugadorResponseDto>>(emptyList())
+    val jugadores: StateFlow<List<JugadorResponseDto>> = _jugadores.asStateFlow()
 
-    // Propiedad para exponer la lista de jugadores como StateFlow
-    val jugadores: StateFlow<List<Jugadores>> = repository.getAllJugadores().stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
-
-    // Canal de eventos para mensajes simples (Snackbar)
     private val _event = Channel<String>()
     val event = _event.receiveAsFlow()
 
@@ -38,45 +33,39 @@ class JugadoresViewModel @Inject constructor(
         }
     }
 
-    fun onEvent(event: JugadoresEvent) {
-        when (event) {
-            is JugadoresEvent.NombreChanged -> {
-                _state.value = _state.value.copy(nombres = event.value)
-            }
-            is JugadoresEvent.PartidasChanged -> {
-                _state.value = _state.value.copy(partidas = event.value)
-            }
-            is JugadoresEvent.Save -> {
-                insertarJugador(event.jugador)
-            }
-            is JugadoresEvent.Delete -> {
-                eliminarJugador(event.jugador)
-            }
-            is JugadoresEvent.Select -> {
-                _state.value = _state.value.copy(
-                    jugadorId = event.jugador.jugadorId,
-                    nombres = event.jugador.nombres,
-                    partidas = event.jugador.partidas
-                )
+    init {
+        cargarJugadores()
+    }
+
+    fun cargarJugadores() {
+        viewModelScope.launch {
+            val result = repository.getJugadores()
+            result.onSuccess { lista ->
+                _jugadores.value = lista ?: emptyList()
+            }.onFailure { e ->
+                sendEvent("Error al cargar jugadores: ${e.message}")
             }
         }
     }
 
-    private fun insertarJugador(jugador: Jugadores) {
+    fun crearJugador(nombre: String, email: String) {
         viewModelScope.launch {
-            repository.getAllJugadores().collect { lista ->
-                if (lista.any { it.nombres.equals(jugador.nombres, ignoreCase = true) }) {
-                    sendEvent("No se puede agregar un jugador con el mismo nombre")
+            val request = JugadorRequestDto(
+                nombres = nombre,
+                email = email
+            )
+            val result = repository.postJugador(request)
+            result.onSuccess { nuevoJugador ->
+                if (nuevoJugador != null) {
+                    _jugadores.value = _jugadores.value + nuevoJugador
+                    sendEvent("Jugador creado correctamente")
                 } else {
-                    repository.insertJugador(jugador)
+                    sendEvent("No se pudo crear el jugador")
                 }
+            }.onFailure { e ->
+                sendEvent("Error al crear jugador: ${e.message}")
             }
-        }
-    }
 
-    private fun eliminarJugador(jugador: Jugadores) {
-        viewModelScope.launch {
-            repository.deleteJugador(jugador)
         }
     }
 }
