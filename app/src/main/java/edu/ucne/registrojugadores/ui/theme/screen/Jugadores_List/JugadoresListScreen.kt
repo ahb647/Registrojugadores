@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,20 +13,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
+import edu.ucne.registrojugadores.Data.remote.dto.JugadorResponseDto
 import edu.ucne.registrojugadores.ui.theme.util.Route
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JugadoresListScreen(
     onNavigate: (String) -> Unit = {},
-    viewModel: JugadoresViewModel
+    viewModel: edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresViewModel
 ) {
-    val jugadores by viewModel.jugadores.collectAsState(emptyList())
-
-    var jugadorId by remember { mutableStateOf<Int?>(null) }
+    val jugadores by viewModel.jugadores.collectAsState()
     var nombre by remember { mutableStateOf("") }
-    var partidas by remember { mutableStateOf("0") }
+    var email by remember { mutableStateOf("") }
 
     Scaffold { padding ->
         Box(
@@ -35,7 +32,6 @@ fun JugadoresListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Contenido principal
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -56,57 +52,29 @@ fun JugadoresListScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
-                    value = partidas,
-                    onValueChange = { partidas = it },
-                    label = { Text("Partidas") },
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = {
-                        if (nombre.isBlank()) {
-                            Log.e("JugadoresListScreen", "El nombre no puede estar vacío")
+                        if (nombre.isBlank() || email.isBlank()) {
+                            Log.e("JugadoresListScreen", "Nombre y email son obligatorios")
                             return@Button
                         }
-
-                        val partidasInt = partidas.toIntOrNull() ?: 0
-
-                        val existe = jugadores.any { it.nombres.equals(nombre, ignoreCase = true) && it.jugadorId != jugadorId }
-                        if (existe) {
-                            Log.e("JugadoresListScreen", "Ya existe un jugador con el nombre: $nombre")
-                            return@Button
-                        }
-
-                        if (jugadorId == null) {
-                            viewModel.insertarJugador(
-                                Jugadores(
-                                    nombres = nombre,
-                                    partidas = partidasInt
-                                )
-                            )
-                            Log.d("JugadoresListScreen", "Jugador insertado: $nombre con $partidasInt partidas")
-                        } else {
-                            viewModel.actualizarJugador(
-                                Jugadores(
-                                    jugadorId = jugadorId!!,
-                                    nombres = nombre,
-                                    partidas = partidasInt
-                                )
-                            )
-                            Log.d("JugadoresListScreen", "Jugador actualizado: $nombre con $partidasInt partidas")
-                        }
-
-                        jugadorId = null
+                        viewModel.crearJugador(nombre, email)
                         nombre = ""
-                        partidas = "0"
+                        email = ""
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
                     shape = MaterialTheme.shapes.large
                 ) {
-                    Text(text = if (jugadorId == null) "Guardar" else "Actualizar")
+                    Text(text = "Guardar")
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -123,22 +91,12 @@ fun JugadoresListScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(jugadores) { jugador ->
-                            JugadorItem(
-                                jugador = jugador,
-                                onDelete = { viewModel.eliminarJugador(jugador) },
-                                onSelect = {
-                                    jugadorId = jugador.jugadorId
-                                    nombre = jugador.nombres
-                                    partidas = jugador.partidas.toString()
-                                    Log.d("JugadoresListScreen", "Jugador seleccionado para editar: ${jugador.nombres}")
-                                }
-                            )
+                            JugadorItem(jugador)
                         }
                     }
                 }
             }
 
-            // Botón de Partidas en la esquina inferior derecha
             Button(
                 onClick = { onNavigate(Route.PARTIDA_LIST) },
                 modifier = Modifier
@@ -149,60 +107,36 @@ fun JugadoresListScreen(
             ) {
                 Text("▶")
             }
-
-            // Botón de Logros centrado en la parte inferior
-            Button(
-                onClick = { onNavigate(Route.LOGROS_LIST) },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp)
-                    .height(48.dp)
-                    .width(120.dp),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Text("Logros")
-            }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun JugadorItem(
-    jugador: Jugadores,
-    onDelete: () -> Unit,
-    onSelect: () -> Unit
-) {
+fun JugadorItem(jugador: JugadorResponseDto) {
     Card(
-        onClick = onSelect,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Jugador",
-                    modifier = Modifier.padding(end = 16.dp)
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = "Jugador",
+                modifier = Modifier.padding(end = 16.dp)
+            )
+            Column {
+                Text(
+                    text = jugador.nombres,
+                    fontWeight = FontWeight.Bold
                 )
-                Column {
-                    Text(
-                        text = jugador.nombres,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Partidas: ${jugador.partidas}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                Text(
+                    text = "Email: ${jugador.email}",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }
