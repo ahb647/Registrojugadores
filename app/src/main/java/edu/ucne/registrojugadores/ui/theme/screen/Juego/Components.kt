@@ -19,6 +19,7 @@ import edu.ucne.registrojugadores.ui.theme.GreenishYellow
 
 @Composable
 fun BoardBase() {
+
     Canvas(
         modifier = Modifier
             .size(300.dp)
