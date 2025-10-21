@@ -1,14 +1,14 @@
 package edu.ucne.registrojugadores.ui.theme.screen.Jugadores
 
 
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import edu.ucne.registrojugadores.Data.remote.dto.JugadorResponseDto
 import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresEvent
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresState
@@ -16,10 +16,20 @@ import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresState
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JugadorScreen(
-    state: JugadoresState,
+    jugadorDto: JugadorResponseDto?,
     onEvent: (JugadoresEvent) -> Unit,
     onNavigateBack: () -> Unit
 ) {
+    val state by remember(jugadorDto) {
+        mutableStateOf(
+            JugadoresState(
+                jugadorId = jugadorDto?.jugadorId,
+                nombres = jugadorDto?.nombres ?: "",
+                partidas = 0
+            )
+        )
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -32,7 +42,6 @@ fun JugadorScreen(
                         )
                     }
                 }
-
             )
         }
     ) { innerPadding ->
@@ -59,7 +68,6 @@ fun JugadorScreen(
                 label = { Text("Partidas") },
                 modifier = Modifier.fillMaxWidth()
             )
-
 
             Button(
                 onClick = {
