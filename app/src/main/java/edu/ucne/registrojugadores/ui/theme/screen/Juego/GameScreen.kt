@@ -19,15 +19,15 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
 import edu.ucne.registrojugadores.ui.theme.GrayBackground
+import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresViewModel
 
 @Composable
 fun GameScreen(
     gameViewModel: GameViewModel = hiltViewModel(),
-    jugadoresViewModel: edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresViewModel = hiltViewModel()
+    jugadoresViewModel: JugadoresViewModel = hiltViewModel()
 ) {
     val state by gameViewModel.state.collectAsState()
-    val jugadoresDto by jugadoresViewModel.jugadores.collectAsState(initial = emptyList())
-    val jugadores: List<Jugadores> = jugadoresDto.map { Jugadores(it.jugadorId, it.nombres) }
+    val jugadores by jugadoresViewModel.jugadores.collectAsState(initial = emptyList())
 
     var searchPartidaId by remember { mutableStateOf("") }
     val numberColor = Color.Black
@@ -87,7 +87,7 @@ fun GameScreen(
 
             OutlinedButton(
                 onClick = { gameViewModel.guardarMovimientosActuales() },
-                enabled = state.board.any { it != null } && state.board.any { it != null },
+                enabled = state.board.any { it != null },
                 modifier = Modifier.size(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, Color.Black)
