@@ -1,5 +1,6 @@
 package edu.ucne.registrojugadores.Data.Di
 
+
 import android.content.Context
 import androidx.room.Room
 import dagger.Module
@@ -9,14 +10,16 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import edu.ucne.registrojugadores.Data.Local.AppDatabase
 import edu.ucne.registrojugadores.Data.Local.Dao.JugadorDao
-import edu.ucne.registrojugadores.Data.Local.Dao.PartidaDao
 import edu.ucne.registrojugadores.Data.Local.Dao.LogrosDao
+import edu.ucne.registrojugadores.Data.Local.Dao.PartidaDao
 import edu.ucne.registrojugadores.Data.Repository.JugadorRepositoryImpl
-import edu.ucne.registrojugadores.Data.Repository.PartidasRepositoryImpl
 import edu.ucne.registrojugadores.Data.Repository.LogrosRepositoryImpl
+import edu.ucne.registrojugadores.Data.Repository.PartidasRepositoryImpl
+import edu.ucne.registrojugadores.Data.remote.GestionHuacalesAPI
+import edu.ucne.registrojugadores.Data.remote.JugadorRemoteDataSource
 import edu.ucne.registrojugadores.Domain.Model.Repository.JugadoresRepository
-import edu.ucne.registrojugadores.Domain.Model.Repository.PartidasRepository
 import edu.ucne.registrojugadores.Domain.Model.Repository.LogrosRepository
+import edu.ucne.registrojugadores.Domain.Model.Repository.PartidasRepository
 import javax.inject.Singleton
 
 @Module
@@ -35,9 +38,14 @@ object AppModule {
             .build()
     }
 
-    // ---------------------------
-    // Jugadores
-    // ---------------------------
+    @Provides
+    @Singleton
+    fun provideJugadorRemoteDataSource(
+        api: GestionHuacalesAPI
+    ): JugadorRemoteDataSource {
+        return JugadorRemoteDataSource(api)
+    }
+
     @Provides
     @Singleton
     fun provideJugadorDao(database: AppDatabase): JugadorDao {
@@ -46,13 +54,13 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideJugadorRepository(dao: JugadorDao): JugadoresRepository {
-        return JugadorRepositoryImpl(dao)
+    fun provideJugadorRepository(
+        dao: JugadorDao,
+        remoteDataSource: JugadorRemoteDataSource
+    ): JugadoresRepository {
+        return JugadorRepositoryImpl(dao, remoteDataSource)
     }
 
-    // ---------------------------
-    // Partidas
-    // ---------------------------
     @Provides
     @Singleton
     fun providePartidaDao(database: AppDatabase): PartidaDao {
@@ -65,9 +73,6 @@ object AppModule {
         return PartidasRepositoryImpl(dao)
     }
 
-    // ---------------------------
-    // Logros
-    // ---------------------------
     @Provides
     @Singleton
     fun provideLogrosDao(database: AppDatabase): LogrosDao {
