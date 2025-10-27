@@ -1,6 +1,7 @@
 package edu.ucne.registrojugadores.ui.theme.screen.Jugadores
 
 
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
@@ -8,24 +9,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import edu.ucne.registrojugadores.Data.remote.dto.JugadorResponseDto
 import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
-import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresEvent
-import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JugadorScreen(
-    jugadorDto: JugadorResponseDto?,
+    jugador: Jugadores?,
     onEvent: (JugadoresEvent) -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val state by remember(jugadorDto) {
+    val state by remember(jugador) {
         mutableStateOf(
             JugadoresState(
-                jugadorId = jugadorDto?.jugadorId,
-                nombres = jugadorDto?.nombres ?: "",
-                partidas = 0
+                jugadorId = jugador?.jugadorId,
+                nombres = jugador?.nombres ?: "",
+                email = jugador?.email ?: ""
             )
         )
     }
@@ -35,7 +33,7 @@ fun JugadorScreen(
             CenterAlignedTopAppBar(
                 title = { Text(text = "Jugador") },
                 navigationIcon = {
-                    IconButton(onClick = { onNavigateBack() }) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.Rounded.ArrowBack,
                             contentDescription = "navigate back"
@@ -60,12 +58,9 @@ fun JugadorScreen(
             )
 
             OutlinedTextField(
-                value = state.partidas.toString(),
-                onValueChange = {
-                    val partidas = it.toIntOrNull() ?: 0
-                    onEvent(JugadoresEvent.PartidasChanged(partidas))
-                },
-                label = { Text("Partidas") },
+                value = state.email,
+                onValueChange = { onEvent(JugadoresEvent.EmailChanged(it)) },
+                label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -74,9 +69,9 @@ fun JugadorScreen(
                     onEvent(
                         JugadoresEvent.Save(
                             jugador = Jugadores(
-                                jugadorId = state.jugadorId,
+                                jugadorId = state.jugadorId ?: 0,
                                 nombres = state.nombres,
-                                partidas = state.partidas
+                                email = state.email
                             )
                         )
                     )
