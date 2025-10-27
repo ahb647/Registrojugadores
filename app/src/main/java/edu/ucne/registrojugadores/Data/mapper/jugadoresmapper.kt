@@ -1,26 +1,32 @@
 package edu.ucne.registrojugadores.Data.mapper
 
+
 import edu.ucne.registrojugadores.Data.Local.Entity.JugadorEntity
 import edu.ucne.registrojugadores.Data.Local.Entity.PartidaEntity
 import edu.ucne.registrojugadores.Data.Local.Entity.LogrosEntity
+import edu.ucne.registrojugadores.Data.remote.dto.JugadorResponseDto
 import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
 import edu.ucne.registrojugadores.Domain.Model.Model.Partida
 import edu.ucne.registrojugadores.Domain.Model.Model.Logros
 
-// -------------------- JUGADORES --------------------
 fun JugadorEntity.asExternalModel(): Jugadores = Jugadores(
     jugadorId = jugadorId,
     nombres = nombres,
-    partidas = partidas
+    email = email
 )
 
 fun Jugadores.toEntity(): JugadorEntity = JugadorEntity(
-    jugadorId = jugadorId ?: 0,
+    jugadorId = jugadorId,
     nombres = nombres,
-    partidas = partidas
+    email = email
 )
 
-// -------------------- PARTIDAS --------------------
+fun JugadorResponseDto.toEntity(): JugadorEntity = JugadorEntity(
+    jugadorId = jugadorId,
+    nombres = nombres,
+    email = email
+)
+
 fun PartidaEntity.asExternalModel(): Partida = Partida(
     partidaId = partidaId,
     fecha = fecha,
@@ -39,7 +45,6 @@ fun Partida.toEntity(): PartidaEntity = PartidaEntity(
     esFinalizada = esFinalizada
 )
 
-// -------------------- LOGROS --------------------
 fun LogrosEntity.asExternalModel(): Logros = Logros(
     logroId = logroId,
     logroNombre = logroNombre,
