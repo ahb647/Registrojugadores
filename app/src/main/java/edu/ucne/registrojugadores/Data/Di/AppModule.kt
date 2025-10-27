@@ -22,6 +22,7 @@ import edu.ucne.registrojugadores.Domain.Model.Repository.LogrosRepository
 import edu.ucne.registrojugadores.Domain.Model.Repository.PartidasRepository
 import javax.inject.Singleton
 
+
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
