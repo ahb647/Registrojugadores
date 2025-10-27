@@ -1,6 +1,7 @@
 package edu.ucne.registrojugadores.Domain.Model.Repository
 
 import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
+import edu.ucne.registrojugadores.Data.remote.Resource
 import kotlinx.coroutines.flow.Flow
 
 interface JugadoresRepository {
@@ -15,5 +16,5 @@ interface JugadoresRepository {
 
     suspend fun updateJugador(jugador: Jugadores)
 
-    suspend fun incrementarPartidas(jugadorId: Int)
+    suspend fun syncJugadores(): Resource<Unit>
 }
