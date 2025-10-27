@@ -1,28 +1,30 @@
 package edu.ucne.registrojugadores.ui.theme.screen.Jugadores
 
+
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import edu.ucne.registrojugadores.Data.Repository.GestionHuacalesApiRepository
-import edu.ucne.registrojugadores.Data.remote.dto.JugadorRequestDto
-import edu.ucne.registrojugadores.Data.remote.dto.JugadorResponseDto
+import edu.ucne.registrojugadores.Data.remote.Resource
+import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
+import edu.ucne.registrojugadores.Domain.Model.Repository.JugadoresRepository
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class JugadoresViewModel @Inject constructor(
-    private val repository: GestionHuacalesApiRepository,
+    private val repository: JugadoresRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _jugadores = MutableStateFlow<List<JugadorResponseDto>>(emptyList())
-    val jugadores: StateFlow<List<JugadorResponseDto>> = _jugadores.asStateFlow()
+    val jugadores: StateFlow<List<Jugadores>> =
+        repository.getAllJugadores().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     private val _event = Channel<String>()
     val event = _event.receiveAsFlow()
@@ -34,38 +36,42 @@ class JugadoresViewModel @Inject constructor(
     }
 
     init {
-        cargarJugadores()
+        syncJugadores()
     }
 
-    fun cargarJugadores() {
+    fun syncJugadores() {
         viewModelScope.launch {
-            val result = repository.getJugadores()
-            result.onSuccess { lista ->
-                _jugadores.value = lista ?: emptyList()
-            }.onFailure { e ->
-                sendEvent("Error al cargar jugadores: ${e.message}")
+            when (val result = repository.syncJugadores()) {
+                is Resource.Success -> sendEvent("Jugadores sincronizados")
+                is Resource.Error -> sendEvent("Error al sincronizar: ${result.message}")
+                is Resource.Loading -> {}
             }
         }
     }
 
     fun crearJugador(nombre: String, email: String) {
         viewModelScope.launch {
-            val request = JugadorRequestDto(
+            val nuevoJugador = Jugadores(
+                jugadorId = 0,
                 nombres = nombre,
                 email = email
             )
-            val result = repository.postJugador(request)
-            result.onSuccess { nuevoJugador ->
-                if (nuevoJugador != null) {
-                    _jugadores.value = _jugadores.value + nuevoJugador
-                    sendEvent("Jugador creado correctamente")
-                } else {
-                    sendEvent("No se pudo crear el jugador")
-                }
-            }.onFailure { e ->
-                sendEvent("Error al crear jugador: ${e.message}")
-            }
+            repository.insertJugador(nuevoJugador)
+            sendEvent("Jugador creado correctamente")
+        }
+    }
 
+    fun eliminarJugador(jugador: Jugadores) {
+        viewModelScope.launch {
+            repository.deleteJugador(jugador)
+            sendEvent("Jugador eliminado correctamente")
+        }
+    }
+
+    fun actualizarJugador(jugador: Jugadores) {
+        viewModelScope.launch {
+            repository.updateJugador(jugador)
+            sendEvent("Jugador actualizado correctamente")
         }
     }
 }
