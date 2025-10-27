@@ -1,8 +1,10 @@
 package edu.ucne.registrojugadores.ui.theme.screen.Partidas_List
 
+
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SportsEsports
@@ -14,8 +16,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import edu.ucne.registrojugadores.Data.remote.dto.JugadorResponseDto
 import edu.ucne.registrojugadores.Data.remote.dto.PartidaResponseDto
+import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
+import edu.ucne.registrojugadores.Domain.Model.Model.Partida
 import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresViewModel
 import edu.ucne.registrojugadores.ui.theme.screen.Partidas.PartidasViewModel
 import edu.ucne.registrojugadores.ui.theme.util.Route
@@ -29,7 +32,7 @@ fun PartidasListScreen(
     viewModel: PartidasViewModel = hiltViewModel(),
     jugadoresViewModel: JugadoresViewModel = hiltViewModel()
 ) {
-    val partidas by viewModel.partidas.collectAsState()
+    val partidas by viewModel.partidas.collectAsState(initial = emptyList())
     val jugadores by jugadoresViewModel.jugadores.collectAsState(initial = emptyList())
 
     val hoy = LocalDate.now().format(DateTimeFormatter.ISO_DATE)
@@ -158,10 +161,17 @@ fun PartidasListScreen(
     }
 }
 
+private fun LazyItemScope.PartidaItem(
+    partida: PartidaResponseDto,
+    jugadores: List<Jugadores>,
+    onSelect: () -> Unit
+) {
+}
+
 @Composable
 fun PartidaItem(
-    partida: PartidaResponseDto,
-    jugadores: List<JugadorResponseDto>,
+    partida: Partida,
+    jugadores: List<Jugadores>,
     onSelect: () -> Unit
 ) {
     val jugador1Nombre = jugadores.firstOrNull { it.jugadorId == partida.jugador1Id }?.nombres ?: "Jugador 1"

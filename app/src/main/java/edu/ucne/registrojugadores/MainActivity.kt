@@ -81,10 +81,10 @@ class MainActivity : ComponentActivity() {
                         composable(Route.JUGADOR_FORM) {
                             val viewModel: JugadoresViewModel = hiltViewModel()
                             val jugadores by viewModel.jugadores.collectAsState(initial = emptyList())
-                            val jugadorDto = jugadores.firstOrNull()
+                            val jugador = jugadores.firstOrNull()
 
                             JugadorScreen(
-                                jugadorDto = jugadorDto,
+                                jugador = jugador,
                                 onEvent = { event ->
                                     if (event is JugadoresEvent.Save) {
                                         navController.previousBackStackEntry
