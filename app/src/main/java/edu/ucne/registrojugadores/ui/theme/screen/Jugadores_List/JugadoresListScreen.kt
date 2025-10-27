@@ -13,14 +13,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import edu.ucne.registrojugadores.Data.remote.dto.JugadorResponseDto
+import edu.ucne.registrojugadores.Domain.Model.Model.Jugadores
+import edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresViewModel
 import edu.ucne.registrojugadores.ui.theme.util.Route
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JugadoresListScreen(
     onNavigate: (String) -> Unit = {},
-    viewModel: edu.ucne.registrojugadores.ui.theme.screen.Jugadores.JugadoresViewModel
+    viewModel: JugadoresViewModel
 ) {
     val jugadores by viewModel.jugadores.collectAsState()
     var nombre by remember { mutableStateOf("") }
@@ -112,7 +113,7 @@ fun JugadoresListScreen(
 }
 
 @Composable
-fun JugadorItem(jugador: JugadorResponseDto) {
+fun JugadorItem(jugador: Jugadores) {
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
